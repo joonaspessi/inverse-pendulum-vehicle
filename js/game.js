@@ -1,8 +1,8 @@
 define(function (require) {
+    var $ = require('jquery');
     var Matter = require('matter-js');
     var IPVehicle = require('IPVehicle');
-    console.log('main game');
-    var ipVehicle = new IPVehicle();
+
 
     // Matter aliases
     var Engine = Matter.Engine,
@@ -25,13 +25,21 @@ define(function (require) {
     var options = {
             positionIterations: 6,
             velocityIterations: 4,
-            enableSleeping: false
+            enableSleeping: false,
     };
 
-    var container   = document.getElementById('canvas-container'),
-        _engine      = Engine.create(container, options),
-        _world      = _engine.world;
-        _mouse       = MouseConstraint.create(_engine);
+    var container       = document.getElementById('canvas-container'),
+        _engine         = Engine.create(container, options),
+        _world          = _engine.world;
+        _mouse          = MouseConstraint.create(_engine);
+        _renderOptions  = _engine.render.options
+
+        _renderOptions.showCollisions = true;
+        _renderOptions.showPositions = true;
+        _renderOptions.showAngleIndicator = true;
+        _renderOptions.showVelocity = true;
+
+    window.engine = _engine;
 
     // Add borders
     var offset = 5;
@@ -46,6 +54,26 @@ define(function (require) {
 
     Engine.run(_engine);
 
-    var scale = 0.9;
-    World.add(_world, Composites.car(150, 100, 100 * scale, 40 * scale, 30 * scale));
+    var ipVehicle = new IPVehicle({engine: _engine, x: 300, y: 550});
+    window.ipv = ipVehicle;
+
+    World.add(_world, [
+        ipVehicle.getView()
+    ]);
+
+
+    // Main game loop
+    Events.on(_engine, 'tick', function(event) {
+        ipVehicle.step();
+    });
+
+    $(document).on('keydown', function(event) {
+        if (wheel.speed > 4) return;
+        if (event.keyCode === 39) {
+            Matter.Body.applyForce(wheel, {x:0,y:20}, {x:0.02,y:0});
+        } else if (event.keyCode === 37) {
+            Matter.Body.applyForce(wheel, {x:0,y:20}, {x:-0.02,y:0});
+        }
+    });
+
 });
