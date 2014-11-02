@@ -1,0 +1,27 @@
+{
+  "name": "Inverse pendulum vehicle",
+  "version": "0.0.1",
+  "homepage": "https://github.com/joonaspessi/inverse-pendulum-vehicle",
+  "authors": [
+    "joonas.pessi@gmail.com"
+  ],
+  "description": "Inverse pendulum vehicle game",
+  "keywords": [
+    "inverse",
+    "pendulum",
+    "segway",
+    "game"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "matter-js": "~0.8.0-alpha"
+  }
+}
