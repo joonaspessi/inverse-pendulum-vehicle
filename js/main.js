@@ -1,12 +1,17 @@
 requirejs.config({
     paths: {
         "jquery": "../bower_components/jquery/dist/jquery",
-        "matter-js": '../bower_components/matter-js/build/matter-0.8.0'
+        "matter-js": '../bower_components/matter-js/build/matter-0.8.0',
+        "box2d": "lib/Box2dWeb-2.1.a.3"
     },
     shim: {
         'matter-js': {
             exports: 'Matter'
         },
+
+        'box2d': {
+            exports: "Box2D"
+        }
     }
 });
 
