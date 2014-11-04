@@ -2,78 +2,68 @@ define(function (require) {
     var $ = require('jquery');
     var Matter = require('matter-js');
     var IPVehicle = require('IPVehicle');
+    var Box2D = require('box2d');
+    var DebugDraw = require('debugDraw');
 
 
-    // Matter aliases
-    var Engine = Matter.Engine,
-        World = Matter.World,
-        Bodies = Matter.Bodies,
-        Body = Matter.Body,
-        Composite = Matter.Composite,
-        Composites = Matter.Composites,
-        Common = Matter.Common,
-        Constraint = Matter.Constraint,
-        RenderPixi = Matter.RenderPixi,
-        Events = Matter.Events,
-        Bounds = Matter.Bounds,
-        Vector = Matter.Vector,
-        Vertices = Matter.Vertices,
-        MouseConstraint = Matter.MouseConstraint,
-        Mouse = Matter.Mouse,
-        Query = Matter.Query;
+    function Game() {
+        this.world = new Box2D.b2World(new Box2D.b2Vec2(0.0, -10.0));
+        this.initDegugDraw();
+        this.initGround();
+    }
 
-    var options = {
-            positionIterations: 6,
-            velocityIterations: 4,
-            enableSleeping: false,
+    Game.prototype.initDegugDraw = function() {
+        this.canvas = document.getElementById("canvas")
+
+        this.context = canvas.getContext('2d');
+        this.context.fillStyle = 'rgb(0,0,0)';
+        this.context.fillRect( 0, 0, canvas.width, canvas.height );
+        this.debugDraw = new DebugDraw(this.context);
+        this.debugDraw.SetFlags(1);
+        this.world.SetDebugDraw(this.debugDraw);
     };
 
-    var container       = document.getElementById('canvas-container'),
-        _engine         = Engine.create(container, options),
-        _world          = _engine.world;
-        _mouse          = MouseConstraint.create(_engine);
-        _renderOptions  = _engine.render.options
+    Game.prototype.initGround = function() {
 
-        _renderOptions.showCollisions = true;
-        _renderOptions.showPositions = true;
-        _renderOptions.showAngleIndicator = true;
-        _renderOptions.showVelocity = true;
+        var shape = new Box2D.b2EdgeShape();
+        shape.Set(new Box2D.b2Vec2(-40.0, 0.0), new Box2D.b2Vec2(40.0, 0.0));
 
-    window.engine = _engine;
+        var ground = this.world.CreateBody(new Box2D.b2BodyDef());
+        ground.CreateFixture(shape, 0.0);
 
-    // Add borders
-    var offset = 5;
-    World.add(_world, [
-        Bodies.rectangle(400, -offset, 800.5 + 2 * offset, 50.5, { isStatic: true }),
-        Bodies.rectangle(400, 600 + offset, 800.5 + 2 * offset, 50.5, { isStatic: true }),
-        Bodies.rectangle(800 + offset, 300, 50.5, 600.5 + 2 * offset, { isStatic: true }),
-        Bodies.rectangle(-offset, 300, 50.5, 600.5 + 2 * offset, { isStatic: true })
-    ]);
+        var shape = new Box2D.b2PolygonShape();
+        shape.SetAsBox(0.25, 0.25);
 
-    World.add(_engine.world, _mouse);
+        var bd = new Box2D.b2BodyDef();
+        bd.set_type(Box2D.b2_dynamicBody);
+        bd.set_position(new Box2D.b2Vec2(-7.7, 15.0));
+        var b4 = this.world.CreateBody(bd);
+        b4.CreateFixture(shape, 10.0);
+    };
 
-    Engine.run(_engine);
+    Game.prototype.update = function() {
+        this.world.Step(1 / 60, 3, 2);
 
-    var ipVehicle = new IPVehicle({engine: _engine, x: 300, y: 550});
-    window.ipv = ipVehicle;
+        var ctx = this.context;
+        ctx.fillStyle = 'rgb(0,0,0)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.save()
 
-    World.add(_world, [
-        ipVehicle.getView()
-    ]);
+        ctx.translate(320, 480);
+        ctx.scale(1,-1);
+        ctx.scale(26,26);
+        ctx.lineWidth /= 26;
+        this.world.DrawDebugData();
+        ctx.restore();
+    };
 
+    var game = new Game();
 
-    // Main game loop
-    Events.on(_engine, 'tick', function(event) {
-        ipVehicle.step();
-    });
+    function mainGameLoop() {
+        game.update();
+        window.requestAnimationFrame(mainGameLoop);
+    }
 
-    $(document).on('keydown', function(event) {
-        if (wheel.speed > 4) return;
-        if (event.keyCode === 39) {
-            Matter.Body.applyForce(wheel, {x:0,y:20}, {x:0.02,y:0});
-        } else if (event.keyCode === 37) {
-            Matter.Body.applyForce(wheel, {x:0,y:20}, {x:-0.02,y:0});
-        }
-    });
-
+    // Fire up!
+    mainGameLoop();
 });
