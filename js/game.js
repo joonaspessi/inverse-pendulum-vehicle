@@ -7,7 +7,7 @@ define(function (require) {
 
 
     function Game() {
-        this.world = new Box2D.b2World(new Box2D.b2Vec2(0.0, -30.0));
+        this.world = new Box2D.b2World(new Box2D.b2Vec2(0.0, -10.0));
         this.initDegugDraw();
         this.initGround();
     }
@@ -18,11 +18,6 @@ define(function (require) {
         this.context = canvas.getContext('2d');
         this.context.fillStyle = 'rgb(0,0,0)';
         this.context.fillRect( 0, 0, canvas.width, canvas.height );
-        this.context.translate(320, 480);
-        this.context.scale(1,-1);
-        this.context.scale(26,26);
-        this.context.lineWidth /= 26;
-
         this.debugDraw = new DebugDraw(this.context);
         this.debugDraw.SetFlags(1);
         this.world.SetDebugDraw(this.debugDraw);
@@ -36,15 +31,14 @@ define(function (require) {
         var ground = this.world.CreateBody(new Box2D.b2BodyDef());
         ground.CreateFixture(shape, 0.0);
 
-        shape = new Box2D.b2PolygonShape();
-        shape.SetAsBox(6.0, 0.25, new Box2D.b2Vec2(-1.5, 10.0), 0);
-        ground.CreateFixture(shape, 0.0);
+        var shape = new Box2D.b2PolygonShape();
+        shape.SetAsBox(0.25, 0.25);
 
-        shape.SetAsBox(7.0, 0.25, new Box2D.b2Vec2(1.0, 6.0), 0.3);
-        ground.CreateFixture(shape, 0.0);
-
-        shape.SetAsBox(0.25, 1.5, new Box2D.b2Vec2(-7.0, 4.0), 0.0);
-        ground.CreateFixture(shape, 0.0);
+        var bd = new Box2D.b2BodyDef();
+        bd.set_type(Box2D.b2_dynamicBody);
+        bd.set_position(new Box2D.b2Vec2(-7.7, 15.0));
+        var b4 = this.world.CreateBody(bd);
+        b4.CreateFixture(shape, 10.0);
     };
 
     Game.prototype.update = function() {
@@ -53,8 +47,14 @@ define(function (require) {
         var ctx = this.context;
         ctx.fillStyle = 'rgb(0,0,0)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        this.world.DrawDebugData();
+        ctx.save()
 
+        ctx.translate(320, 480);
+        ctx.scale(1,-1);
+        ctx.scale(26,26);
+        ctx.lineWidth /= 26;
+        this.world.DrawDebugData();
+        ctx.restore();
     };
 
     var game = new Game();
