@@ -11,6 +11,10 @@ define(function (require) {
         return angle;
     }
 
+    function limit(number, min, max) {
+        return Math.min(Math.max(number,min),max);
+    }
+
     var Vehicle = function IPVehicle(options) {
         this.world = options.world
 
@@ -21,7 +25,7 @@ define(function (require) {
         this.positionController.setGains( 0.5, 0.0, 1.5 );
 
         this._posAvg = 0;
-        this._targetPosition = 1;
+        this._targetPosition = 0;
 
         this._createVehicle();
     };
@@ -100,7 +104,7 @@ define(function (require) {
         this.positionController.step(1/60);
         var targetLinAccel = this.positionController.getOutput();
         var targetAngle = targetLinAccel / this.world.GetGravity().get_y();
-        // Todo clamp angle targetAngle = b2clamp(...) -15 - 15
+        var targetAngle = limit(targetAngle, -15 * DEGTORAD, 15 * DEGTORAD);
 
         var currentAngle = this._pendulumBody.GetAngle();
         currentAngle = normalizeAngle(currentAngle);
@@ -108,10 +112,12 @@ define(function (require) {
         this.angleController.step(1/60);
         var targetSpeed = this.angleController.getOutput();
 
-        //Todo give up if ipv is katollaan
+        //Give up if ipv is katollaan
+        if (Math.abs(targetSpeed) > 1000) {
+            targetSpeed = 0;
+        }
 
         var targetAngularVelocity = -targetSpeed / (2 * Math.PI * 1); // Wheel circumference 2*pi*r
-
         this._wheelJoint.SetMotorSpeed(targetAngularVelocity);
     };
 
