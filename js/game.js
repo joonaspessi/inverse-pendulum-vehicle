@@ -39,6 +39,21 @@ define(function (require) {
         bd.set_position(new Box2D.b2Vec2(-7.7, 15.0));
         var b4 = this.world.CreateBody(bd);
         b4.CreateFixture(shape, 10.0);
+
+
+
+
+        var shape2 = new Box2D.b2PolygonShape();
+        shape2.SetAsBox(0.5,0.5);
+
+        var bd2 = new Box2D.b2BodyDef();
+        bd2.set_type(Box2D.b2_dynamicBody);
+        bd2.set_position(new Box2D.b2Vec2(0, 2));
+        bd2.set_fixedRotation(true);
+        var cartBody = this.world.CreateBody(bd2);
+
+        cartBody.CreateFixture(shape2, 2.0);
+        debugger;
     };
 
     Game.prototype.update = function() {
