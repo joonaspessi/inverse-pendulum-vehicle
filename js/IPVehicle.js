@@ -2,105 +2,126 @@ define(function (require) {
     var Matter = require('matter-js');
     var Pid = require('Pid');
 
-        // Matter aliases
-    var Engine = Matter.Engine,
-        World = Matter.World,
-        Bodies = Matter.Bodies,
-        Body = Matter.Body,
-        Composite = Matter.Composite,
-        Composites = Matter.Composites,
-        Common = Matter.Common,
-        Constraint = Matter.Constraint,
-        RenderPixi = Matter.RenderPixi,
-        Events = Matter.Events,
-        Bounds = Matter.Bounds,
-        Vector = Matter.Vector,
-        Vertices = Matter.Vertices,
-        MouseConstraint = Matter.MouseConstraint,
-        Mouse = Matter.Mouse,
-        Query = Matter.Query;
-
-
     var DEGTORAD = 0.0174532925199432957;
     var RADTODEG = 57.295779513082320876;
+
     function normalizeAngle(angle) {
         while (angle >  180 * DEGTORAD) angle -= 360 * DEGTORAD;
         while (angle < -180 * DEGTORAD) angle += 360 * DEGTORAD;
         return angle;
     }
 
-    var vehicle = function IPVehicle(options) {
-        this.engine = options.engine
-        this.xx = options.x;
-        this.yy = options.y;
-        this.width = options.width || 10;
-        this.height = options.height || 200;
-        this.wheelSize = options.wheelSize || 20;
+    var Vehicle = function IPVehicle(options) {
+        this.world = options.world
 
         this.angleController = new Pid();
-        this.angleController.setGains( 1.0, 0.0, 1.5 );
+        this.angleController.setGains( 1000, 0, 250 );
 
         this.positionController = new Pid();
         this.positionController.setGains( 0.5, 0.0, 1.5 );
 
         this._posAvg = 0;
-        this._targetPosition = 300;
+        this._targetPosition = 1;
+
+        this._createVehicle();
     };
 
-    vehicle.prototype.getView = function () {
-        var groupId = Body.nextGroupId(),
-            wheelBase = -20,
-            wheelAOffset = 0,
-            wheelYOffset = 0;
+    Vehicle.prototype._createVehicle = function () {
+        // Cart
+        var shape2 = new Box2D.b2PolygonShape();
+        shape2.SetAsBox(0.5,0.5);
 
-        var ipv = Composite.create({ label: 'IPV' });
-        var offset = 10;
-        this.body = Bodies.trapezoid(this.xx, this.yy - this.height/2 , this.width, this.height, 0, {
-            groupId: groupId,
-        });
+        var bd = new Box2D.b2BodyDef();
+        bd.set_type(Box2D.b2_dynamicBody);
+        bd.set_position(new Box2D.b2Vec2(0, 2));
+        bd.set_fixedRotation(true);
 
-        this.wheel = Bodies.circle(this.xx, this.yy, this.wheelSize, {
-            groupId: groupId,
-            restitution: 0.8
-        });
+        this._cartBody = this.world.CreateBody(bd);
+        this._cartBody.CreateFixture(shape2, 2.0);
 
-        var constraint = Constraint.create({
-            bodyA: this.body,
-            pointA: { x: 0, y: 100 },
-            bodyB: this.wheel,
-            stiffness: 0.05,
-            angularStiffness: 0
-        });
+        // Wheel
+        bd.set_fixedRotation(false);
 
-        Composite.addBody(ipv, this.body);
-        Composite.addBody(ipv, this.wheel);
+        var circleShape = new Box2D.b2CircleShape();
+        circleShape.set_m_radius(1);
 
-        // DEBUG TODO REMOVE
-        window.wheel = this.wheel;
-        window.body = this.body;
+        var fd = new Box2D.b2FixtureDef();
+        fd.set_shape(circleShape);
+        fd.set_density(2);
+        fd.set_friction(1);
+        fd.get_filter().set_groupIndex(-1);
 
-        Composite.addConstraint(ipv, constraint);
+        bd.set_position(new Box2D.b2Vec2(0, 2));
+        this._wheelBody = this.world.CreateBody(bd);
+        this._wheelBody.CreateFixture(fd);
 
-        return ipv;
+        // Joint
+        var jd = new Box2D.b2WheelJointDef();
+        jd.set_bodyA(this._cartBody);
+        jd.set_bodyB(this._wheelBody);
+        jd.set_localAnchorA(new Box2D.b2Vec2(0, 0));
+        jd.set_localAnchorB(new Box2D.b2Vec2(0, 0));
+        jd.set_localAxisA(new Box2D.b2Vec2(0, 1));
+        jd.set_frequencyHz(20);
+        jd.set_dampingRatio(1);
+
+        this._wheelJoint = Box2D.castObject(this.world.CreateJoint(jd), Box2D.b2WheelJoint);
+        this._wheelJoint.EnableMotor(true);
+        this._wheelJoint.SetMaxMotorTorque(500);
+        this._wheelJoint.SetMotorSpeed(1);
+
+        //Pendulum
+        var polygonShape = new Box2D.b2PolygonShape();
+        polygonShape.SetAsBox(0.5,5);
+
+        var bd2 = new Box2D.b2BodyDef();
+        bd2.set_type(Box2D.b2_dynamicBody);
+        bd2.set_position(new Box2D.b2Vec2(0, 2 + 5));
+        this._pendulumBody = this.world.CreateBody(bd2);
+
+        var fd2 = new Box2D.b2FixtureDef();
+        fd2.set_shape(polygonShape);
+        fd2.set_density(1);
+        fd2.get_filter().set_groupIndex(-1)
+        this._pendulumBody.CreateFixture(fd2);
+
+        var jd2 = new Box2D.b2RevoluteJointDef();
+        jd2.set_bodyA(this._cartBody);
+        jd2.set_bodyB(this._pendulumBody);
+        jd2.set_localAnchorA(new Box2D.b2Vec2(0.0,0.0));
+        jd2.set_localAnchorB(new Box2D.b2Vec2(0.0,-5.0));
+        jd2.set_collideConnected( false );
+        this._pendulumJoint = Box2D.castObject(this.world.CreateJoint(jd2), Box2D.b2RevoluteJoint);
     };
 
-    vehicle.prototype.step = function() {
-        this._posAvg = 0.95 * this._posAvg + 0.05 * this.wheel.position.x;
+    Vehicle.prototype.step = function() {
+        this._posAvg = 0.95 * this._posAvg + 0.05 * this._pendulumBody.GetPosition().get_x();
         this.positionController.setError(this._targetPosition - this._posAvg);
         this.positionController.step(1/60);
         var targetLinAccel = this.positionController.getOutput();
-        var targetAngle = targetLinAccel / this.engine.world.gravity.y;
+        var targetAngle = targetLinAccel / this.world.GetGravity().get_y();
+        // Todo clamp angle targetAngle = b2clamp(...) -15 - 15
 
-        var currentAngle = this.body.angle;
+        var currentAngle = this._pendulumBody.GetAngle();
         currentAngle = normalizeAngle(currentAngle);
-
         this.angleController.setError(targetAngle - currentAngle);
         this.angleController.step(1/60);
         var targetSpeed = this.angleController.getOutput();
-        // console.log(targetSpeed);
 
+        //Todo give up if ipv is katollaan
+
+        var targetAngularVelocity = -targetSpeed / (2 * Math.PI * 1); // Wheel circumference 2*pi*r
+
+        this._wheelJoint.SetMotorSpeed(targetAngularVelocity);
     };
 
+    Vehicle.prototype.setTargetPosition = function(target) {
+        this._targetPosition = target;
+    }
 
-    return vehicle;
+    Vehicle.prototype.getTargetPosition = function(target) {
+        return this._targetPosition;
+    }
+
+    return Vehicle;
 });
