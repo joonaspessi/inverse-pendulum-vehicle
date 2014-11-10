@@ -217,14 +217,12 @@ define(function (require) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.save()
-
         ctx.translate(this.canvasOffset.x, this.canvasOffset.y);
         ctx.scale(1,-1);
         ctx.scale(this.ptm,this.ptm);
         ctx.lineWidth /= this.ptm;
         this.world.DrawDebugData();
         this.updateTarget();
-
         ctx.restore();
     }
 

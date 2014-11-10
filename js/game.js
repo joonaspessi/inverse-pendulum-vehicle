@@ -52,12 +52,9 @@ define(function (require) {
         });
     };
 
-
     Game.prototype.update = function() {
         this.ipv.step()
         this.world.Step(1 / 60, 3, 2);
-
-
         this.debugDraw.setDrawOptions({
             canvasOffset: {
                 x: this.canvas.width / 2,
@@ -68,11 +65,9 @@ define(function (require) {
         });
         this.debugDraw.setViewCenter(this.ipv.getPosition());
         this.debugDraw.update();
-
     };
 
     var game = new Game();
-
     function mainGameLoop() {
         game.update();
         window.requestAnimationFrame(mainGameLoop);
