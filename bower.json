@@ -22,7 +22,6 @@
     "tests"
   ],
   "dependencies": {
-    "matter-js": "~0.8.0-alpha",
     "jquery": "~2.1.1"
   }
 }

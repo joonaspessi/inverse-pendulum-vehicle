@@ -1,5 +1,4 @@
 define(function (require) {
-    var Matter = require('matter-js');
     var Pid = require('Pid');
 
     var DEGTORAD = 0.0174532925199432957;
