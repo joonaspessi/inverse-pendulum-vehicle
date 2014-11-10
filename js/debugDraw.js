@@ -175,9 +175,57 @@ define(function (require) {
         return debugDraw;
     }
 
-    function DebugDraw(context) {
-        var debugDraw = getCanvasDebugDraw(context);
-        return debugDraw;
+    function DebugDraw(canvas, world) {
+        this.canvas = canvas;
+        this.world = world;
+        this.context = canvas.getContext('2d');
+        this.context.fillStyle = 'rgb(0,0,0)';
+        this.context.fillRect( 0, 0, canvas.width, canvas.height );
+
+        this.debugDraw = getCanvasDebugDraw(this.context);
+        this.debugDraw.SetFlags(1);
+        this.world.SetDebugDraw(this.debugDraw);
+
+        this.canvasOffset = {};
+        this.canvasOffset.x = this.canvas.width/2;
+        this.canvasOffset.y = 480;
+        this.ptm = 20;
+
+    }
+
+    DebugDraw.prototype.setDrawOptions = function(options) {
+        this.canvasOffset.x = options.canvasOffset.x || this.canvasOffset.x;
+        this.canvasOffset.y = options.canvasOffset.y || this.canvasOffset.y;
+        this.ptm = options.ptm || this.ptm;
+        this.target = options.target || 0;
+    };
+
+    DebugDraw.prototype.updateTarget = function() {
+        var ctx = this.context;
+        ctx.fillStyle = "rgb(0,0,255,0.5)"
+        ctx.strokeStyle = "rgb(0,0,255)"
+        ctx.fillRect(this.target - 0.2, 0, 0.2, 0.5);
+    };
+
+    DebugDraw.prototype.setViewCenter = function(position) {
+        this.canvasOffset.x = -position.get_x() * this.ptm + this.canvas.width/2;
+    }
+
+    DebugDraw.prototype.update = function(options) {
+        var ctx = this.context;
+        ctx.fillStyle = 'rgb(0,0,0)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save()
+
+        ctx.translate(this.canvasOffset.x, this.canvasOffset.y);
+        ctx.scale(1,-1);
+        ctx.scale(this.ptm,this.ptm);
+        ctx.lineWidth /= this.ptm;
+        this.world.DrawDebugData();
+        this.updateTarget();
+
+        ctx.restore();
     }
 
     return DebugDraw;

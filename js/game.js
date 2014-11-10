@@ -1,6 +1,5 @@
 define(function (require) {
     var $ = require('jquery');
-    var Matter = require('matter-js');
     var IPVehicle = require('IPVehicle');
     var Box2D = require('box2d');
     var DebugDraw = require('debugDraw');
@@ -15,21 +14,13 @@ define(function (require) {
         this.ipv = new IPVehicle({
             world: this.world
         });
-
-        this.canvasOffset = {};
-        this.canvasOffset.x = this.canvas.width/2;
-        this.canvasOffset.y = 480;
+        this.addEventListeners();
+        this.mouseJointGroundBody = this.world.CreateBody( new Box2D.b2BodyDef() );
     }
 
     Game.prototype.initDegugDraw = function() {
-        this.canvas = document.getElementById("canvas")
-        this.context = canvas.getContext('2d');
-        this.context.fillStyle = 'rgb(0,0,0)';
-        this.context.fillRect( 0, 0, canvas.width, canvas.height );
-        this.debugDraw = new DebugDraw(this.context);
-        this.debugDraw.SetFlags(1);
-        this.world.SetDebugDraw(this.debugDraw);
-        this.addEventListeners();
+        this.canvas = document.querySelector("#canvas");
+        this.debugDraw = new DebugDraw(canvas, this.world);
     };
 
     Game.prototype.initGround = function() {
@@ -43,12 +34,11 @@ define(function (require) {
     Game.prototype.addEventListeners = function() {
         document.addEventListener('keyup', function(event) {
             var target = this.ipv.getTargetPosition();
-
             if (event.keyCode === 37) { // left-arrow
-                target = Math.max(target - 2, -23);
+                target = Math.max(target - 2, -1000);
                 this.ipv.setTargetPosition(target);
             } else if(event.keyCode === 39) { // right-arrow
-                var target = Math.min(target + 2, 23);
+                var target = Math.min(target + 2, 1000);
                 this.ipv.setTargetPosition(target + 2);
             } else if(event.keyCode === 38) { // up-arrow
                 PTM *= 1.1;
@@ -56,29 +46,29 @@ define(function (require) {
                 PTM *= 0.9;
             }
         }.bind(this));
+
+        this.canvas.addEventListener('mousemove', function(event) {
+            console.log('mousemove');
+        });
     };
+
 
     Game.prototype.update = function() {
         this.ipv.step()
         this.world.Step(1 / 60, 3, 2);
 
-        // TODO: move canvas related stuff to debugDraw
-        var ctx = this.context;
-        ctx.fillStyle = 'rgb(0,0,0)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.save()
 
-        ctx.translate(this.canvasOffset.x, this.canvasOffset.y);
-        ctx.scale(1,-1);
-        ctx.scale(PTM,PTM);
-        ctx.lineWidth /= PTM;
-        this.world.DrawDebugData();
+        this.debugDraw.setDrawOptions({
+            canvasOffset: {
+                x: this.canvas.width / 2,
+                y: 480
+            },
+            ptm: PTM,
+            target: this.ipv.getTargetPosition()
+        });
+        this.debugDraw.setViewCenter(this.ipv.getPosition());
+        this.debugDraw.update();
 
-        //draw target position marker
-        ctx.fillStyle = "rgb(0,0,255,0.5)"
-        ctx.strokeStyle = "rgb(0,0,255)"
-        ctx.fillRect(this.ipv.getTargetPosition() - 0.2, 0, 0.2, 0.5);
-        ctx.restore();
     };
 
     var game = new Game();

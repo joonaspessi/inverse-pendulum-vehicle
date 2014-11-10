@@ -129,5 +129,9 @@ define(function (require) {
         return this._targetPosition;
     }
 
+    Vehicle.prototype.getPosition = function(target) {
+        return this._pendulumBody.GetPosition();
+    }
+
     return Vehicle;
 });
